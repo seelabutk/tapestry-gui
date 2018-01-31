@@ -8,4 +8,6 @@ then navigate to:
 
 `http://<host>:<port>/gui.html`
 
+---
+
 ![A screenshot of the GUI](https://raw.githubusercontent.com/seelabutk/tapestry-gui/master/assets/screenshot.png)
