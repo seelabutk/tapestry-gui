@@ -1,4 +1,4 @@
-### GUI for Tapestry
+## GUI for Tapestry
 
 Run as a Tapestry app:
 
@@ -7,3 +7,6 @@ Run as a Tapestry app:
 then navigate to:
 
 `http://<host>:<port>/gui.html`
+
+![A screenshot of the GUI]
+(assets/screenshot.png)
