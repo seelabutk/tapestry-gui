@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+
+import glob
+import json
+import sys
+import os
+
+if __name__ == '__main__':
+    config_dir = '/config/'
+    datasets = []
+    for filename in os.listdir(config_dir):
+        if filename.endswith(".json"):
+            with open(config_dir + filename) as fp:
+                content = json.load(fp)
+                data_file_glob = content["filename"]
+                timesteps = len(glob.glob(data_file_glob))
+
+                datasets.append({"name": filename.replace(".json", ""), "timesteps": timesteps});
+
+    print(json.dumps(datasets))

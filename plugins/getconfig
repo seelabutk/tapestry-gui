@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+
+import json
+import sys
+
+if __name__ == '__main__':
+    config_name = sys.argv[1] + ".json"
+    config_dir = '/config/'
+    config = json.load(open(config_dir + config_name))
+    if "opacityMap" in config and config["opacityMap"][0].isdigit(): 
+        config["opacityMap"] = [int(x * 255) for x in config["opacityMap"]]
+    print(json.dumps(config)) 
