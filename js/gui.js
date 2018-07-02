@@ -16,7 +16,14 @@ GUI.timesteps = 1;
 
 $(document).ready(function(){
     var simpleList = document.getElementById("simpleList");
-    sortable = Sortable.create(simpleList, { handle: ".handle" });
+    sortable = Sortable.create(simpleList, { 
+        handle: ".handle",
+        onUpdate: function(){
+            console.log("updated");
+            GUI.frames = [];
+        }
+    
+    });
 
     SettingsController =  {
         play: function()
@@ -33,20 +40,22 @@ $(document).ready(function(){
         {
             var keyframe = {};
             var hyperimage = $(".main-hyperimage").data("tapestry");
-            keyframe.quaternion = hyperimage.camera.ThisRot;
+            keyframe.rotation= hyperimage.camera.ThisRot;
             keyframe.zoom = hyperimage.camera.zoomScale;
             keyframe.timestep = hyperimage.current_timestep;
+            keyframe.colormap = hyperimage.settings.colormap;
             if (hyperimage.settings.do_isosurface)
             {
-                keyframe.isovalues = [hyperimage.settings.isovalues[0]];
+                keyframe.isovalue = [hyperimage.settings.isovalues[0]];
             }
             SettingsController.add_keyframe(keyframe);
         },
 
         add_keyframe: function(keyframe)
         {
+            GUI.frames = []; //MOA::remove later
             var dataset = settings.getValue("Datasets").value;
-            var hyperimage = $("<img>")
+            var hyperimage = $("<div>")
                 .addClass("hyperimage")
                 .addClass("keyframe")
                 .attr("id", dataset)
@@ -72,7 +81,7 @@ $(document).ready(function(){
             });
             
             var tapestry = $(hyperimage_obj).data("tapestry");
-            tapestry.camera.ThisRot = keyframe.quaternion;
+            tapestry.camera.ThisRot = keyframe.rotation;
             
             // the zoomScale and the position's third element need to change 
             // to reflect the zooming, we should add a setZoom function to 
@@ -85,17 +94,22 @@ $(document).ready(function(){
             else
                 tapestry.current_timestep = 0; 
             
-            if (keyframe.hasOwnProperty("do_isosurface"))
+            if (keyframe.hasOwnProperty("isovalue"))
             {
-                tapestry.settings.do_isosurface = keyframe.do_isosurface;
-                tapestry.settings.isovalues = keyframe.isovalues;
+                tapestry.settings.do_isosurface = true;//keyframe.do_isosurface;
+                tapestry.settings.isovalues = [keyframe.isovalue];
+            }
+
+            if (keyframe.hasOwnProperty("colormap"))
+            {
+                tapestry.settings.colormap = keyframe.colormap;
             }
 
             // not sure if we should keep this now that we're reading from a keyframe
             // object. maybe this can be an approach for keeping the user's settings
             // while importing other settings from an imported video
-            tapestry.settings = 
-                $.extend(true, {}, $(".main-hyperimage").data("tapestry").settings);
+            //tapestry.settings = 
+            //    $.extend(true, {}, $(".main-hyperimage").data("tapestry").settings);
 
             $(hyperimage_obj).mousedown();
             $(hyperimage_obj).mouseup();
@@ -106,7 +120,7 @@ $(document).ready(function(){
             var keyframes = [];
             $(".keyframe").each(function(){
                 var temp_frame = {};
-                temp_frame["quaternion"] = $(this).data("tapestry").camera.ThisRot;
+                temp_frame["rotation"] = $(this).data("tapestry").camera.ThisRot;
                 temp_frame["zoom"] = $(this).data("tapestry").camera.zoomScale;
                 if ($(this).data("tapestry").settings.n_timesteps > 1)
                 {
@@ -157,7 +171,7 @@ $(document).ready(function(){
         change_colormap: function(colormap)
         {
             colormap = colormap.value;
-            $(".main-hyperimage").attr("data-colormap", colormap);
+            $(".main-hyperimage").data("tapestry").settings.colormap = colormap;
             $(".main-hyperimage").data("tapestry").render(0); 
         },
 
@@ -225,7 +239,7 @@ $(document).ready(function(){
             var i = 0;
             $(".keyframe").each(function(){
                 var temp_frame = {};
-                temp_frame["quaternion"] = $(this).data("tapestry").camera.ThisRot;
+                temp_frame["rotation"] = $(this).data("tapestry").camera.ThisRot;
                 temp_frame["zoom"] = $(this).data("tapestry").camera.zoomScale;
                 if ($(this).data("tapestry").settings.n_timesteps > 1)
                 {
@@ -264,6 +278,10 @@ $(document).ready(function(){
 
             for (key in GUI.keyframes)
             {
+                if (!GUI.keyframes[key].hasOwnProperty("colormap"))
+                {
+                    GUI.keyframes[key].colormap = $(".main-hyperimage").data("tapestry").settings.colormap;
+                }
                 SettingsController.add_keyframe(GUI.keyframes[key]);
             } 
         },
@@ -274,7 +292,7 @@ $(document).ready(function(){
             var i = 0;
             $(".keyframe").each(function(){
                 var temp_frame = {};
-                temp_frame["quaternion"] = $(this).data("tapestry").camera.ThisRot;
+                temp_frame["rotation"] = $(this).data("tapestry").camera.ThisRot;
                 temp_frame["zoom"] = $(this).data("tapestry").camera.zoomScale;
                 if ($(this).data("tapestry").settings.n_timesteps > 1)
                 {
@@ -306,6 +324,9 @@ $(document).ready(function(){
         stop_animation: function()
         {
             play = !play;
+            var hyperimage = $(".main-hyperimage").data("tapestry");
+            hyperimage.tiling_on();
+            hyperimage.render(hyperimage.settings.width);
         }
     }
 
@@ -337,8 +358,8 @@ $(document).ready(function(){
         var isovalue = -1;
         if (keyframes[i].hasOwnProperty("isovalue"))
         {
-            isovalue = keyframes[i]["isovalue"] + j * 
-                (keyframes[i + 1]["isovalue"] - keyframes[i]["isovalue"]);
+            isovalue = keyframes[i]["isovalue"][0] + j * 
+                (keyframes[i + 1]["isovalue"][0] - keyframes[i]["isovalue"][0]);
         }
 
         var quat = interpolation[0].elements;
@@ -362,16 +383,21 @@ $(document).ready(function(){
     GUI.frames = {}; // interpolated frames temporarily for rendering
     function _animate(last_timestep, frame_no, length, also_play)
     {
+        if (!play)
+            return 
+
         var now = new Date().getTime();
         var delta = now - last_timestep;
         var hyperimage = $(".main-hyperimage").data("tapestry");
+        if (hyperimage.settings.tiling_status == "on")
+            hyperimage.tiling_off();
 
         if (delta >= delay)
         {
             // actually render a frame if it exists
             if (GUI.frames.hasOwnProperty(frame_no))
             {
-                $(".main-hyperimage").attr("src", GUI.frames[frame_no].src);
+                $(".main-hyperimage img").eq(0).attr("src", GUI.frames[frame_no].src);
                 var next_frame = (frame_no + 1) % ((length - 1) * GUI.n_interpolated_frames);
                 if (frame_no + 1 > (length - 1) * GUI.n_interpolated_frames)
                 {
@@ -390,7 +416,7 @@ $(document).ready(function(){
         produce_interpolated_frame(hyperimage, GUI.keyframes, keyframe_index, interpolation_index);
         
         // get the path, render it and draw it on a canvas
-        var path = hyperimage.render(0, false, true); 
+        var path = hyperimage.make_request(hyperimage.settings.width); 
         var img = new Image();
 
         img.onload = function(){
@@ -505,7 +531,7 @@ $(document).ready(function(){
             }
         });
         modal.setContent("<textarea id='import-area'></textarea>");
-        modal.addFooterBtn("Play", "tingle-btn", function(){
+        modal.addFooterBtn("Import", "tingle-btn", function(){
             SettingsController.import_animation();
             modal.close();
         });
@@ -516,7 +542,7 @@ $(document).ready(function(){
     QuickSettings.useExtStyleSheet();
     settings = QuickSettings.create(0, 0, "Options");
     settings.addBoolean("Iso-surface rendering", false, SettingsController.isosurface);
-    settings.addText("Data Min", "0", SettingsController.change_data_range);
+    settings.addText("Data Min", "0.01", SettingsController.change_data_range);
     settings.addText("Data Max", "1", SettingsController.change_data_range);
     settings.addRange("Isovalue", 0, 1, 0, 0.001, SettingsController.change_isovalue);
     settings.addRange("Timestep", 0, 50, 0, 1, SettingsController.change_timestep);
@@ -563,7 +589,8 @@ $(document).ready(function(){
             $(".hyperimage").tapestry({
                 n_timesteps: GUI.timesteps,
                 width: 512,
-                height: 512
+                height: 512,
+                n_tiles: 16
             });
             settings.setRangeParameters("Timestep", 0, GUI.timesteps, 1); 
         }
