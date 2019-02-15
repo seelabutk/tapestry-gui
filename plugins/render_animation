@@ -1,13 +1,11 @@
 #!/bin/bash
 
 n_intended_images=$1;
-n_files=$(ls /app/data/*.png | wc -l)
+n_files=$(ls /app/data/*.jpg | wc -l)
 if [ $n_files -lt $1 ]; then
     echo "not ready";
     exit 1;
 fi;
-ffmpeg -framerate 25 -i /app/data/%03d.png -c:v libx264 -crf 20 -profile:v high -pix_fmt yuv420p -y /app/data/animation.mp4
+ffmpeg -framerate 25 -i /app/data/%03d.jpg -c:v libx264 -crf 20 -profile:v high -pix_fmt yuv420p -y /app/data/animation.mp4
 echo '{"path": "/app/data/animation.mp4"}'
-rm /app/data/*.png
-
-
+rm /app/data/*.jpg

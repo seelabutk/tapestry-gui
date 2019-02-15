@@ -1,6 +1,9 @@
 body
 {
-    background-color: #fff;
+    /*background-color: #a0a0a0d6;*/
+    background: white;
+    margin: 0;
+    padding: 0;
 }
 
 #simpleList
@@ -41,8 +44,9 @@ body
 
 #wrapper
 {
+    padding-top: 20px;
     position: relative;
-    left: 300px;
+    height: 1000px;
 }
 
 #wrapper ul
@@ -62,9 +66,69 @@ body
     height: 600px;
 }
 
+#frame-area
+{
+    padding-left: 20px;
+}
+
+#tophat
+{
+    height: 20px;
+    width: 100%;
+    background: #333;
+    padding: 10px;
+    margin: 0;
+    font-family: helvetica, sans-serif;
+    color: white;
+}
+
+.gutter {
+    background-color: #eee;
+
+    background-repeat: no-repeat;
+    background-position: 50%;
+}
+
+.gutter.gutter-horizontal {
+    background-image: url('grips/vertical.png');
+    cursor: ew-resize;
+}
+
+.gutter.gutter-vertical {
+    background-image: url('grips/horizontal.png');
+    cursor: ns-resize;
+}
+
+.gutter.gutter-vertical {
+    background-image:  url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=')
+}
+
+.gutter.gutter-horizontal {
+    background-image:  url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==')
+}
+
+.qs_title_bar
+{
+    border-radius: 5px 5px 0 0;
+    background-color: #333 !important;
+    color: #eee !important;
+}
+
+.qs_main
+{
+    border-radius: 7px;
+    height: 750px !important;
+    border: 2px solid #777 !important;
+    padding-left: 1px;
+    top: 30px;
+    left: 10px;
+}
+
 /* syntax highlighting */
 .string { color: darkgray; }
 .number { color: darkgray; }
 .boolean { color: darkgray; }
 .null { color: darkgray; }
 .key { color: steelblue; }
+
+

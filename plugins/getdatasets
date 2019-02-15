@@ -6,7 +6,8 @@ import sys
 import os
 
 if __name__ == '__main__':
-    config_dir = '/config/'
+    config_dir = '/config/' # for docker service mode
+    #config_dir = './' # for standalone enchiladas mode
     datasets = []
     for filename in os.listdir(config_dir):
         if filename.endswith(".json"):

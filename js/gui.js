@@ -25,6 +25,20 @@ $(document).ready(function(){
     
     });
 
+    Split(["#viewer-area", "#frame-area"], {
+        direction: "vertical", 
+        sizes: [80, 20]
+    });
+
+    $(".qs_main").draggable({});
+    setTimeout(function(){
+        $(".qs_main").css({
+            position: "absolute",
+            top: "50px",
+            left: "10px"
+        });
+    }, 500);
+
     SettingsController =  {
         play: function()
         {
@@ -115,35 +129,31 @@ $(document).ready(function(){
             $(hyperimage_obj).mouseup();
         },
 
+        // this needs to be merged with play_animation later
         render_animation: function()
         {
-            var keyframes = [];
-            $(".keyframe").each(function(){
-                var temp_frame = {};
-                temp_frame["rotation"] = $(this).data("tapestry").camera.ThisRot;
-                temp_frame["zoom"] = $(this).data("tapestry").camera.zoomScale;
-                if ($(this).data("tapestry").settings.n_timesteps > 1)
-                {
-                    temp_frame["timestep"] = $(this).data("tapestry").current_timestep;
-                }
-                if ($(this).data("tapestry").settings.do_isosurface)
-                {
-                    temp_frame["isovalue"] = $(this).data("tapestry").settings.isovalues[0];
-                }
-                keyframes.push(temp_frame);
-            }); 
-            $(".main-hyperimage").data("tapestry").keyframes = keyframes;
-            $(".main-hyperimage").data("tapestry").animate(false);
-            SettingsController.render_animation_server_side(keyframes.length);
+            SettingsController.populate_temp_keyframes();
+            delay = long_delay;
+            var n_keyframes = GUI.keyframes.length;
+            var last_timestep = new Date().getTime();
+            var frame_no = 0;
+            play = true;
+
+            // start the animation loop
+            window.requestAnimationFrame(function(){
+                _animate(last_timestep, frame_no, n_keyframes, true);
+            });
+
+            SettingsController.render_animation_server_side(GUI.keyframes.length);
         },
 
         render_animation_server_side: function(n_frames)
         {
             // for every interpolation (between two frames) 
-            // we get 50 frames with a step of 0.02
-            // so we have to have (n_frames-1)*50 images 
+            // we get GUI.n_interpolated_frames frames with a step of 0.02
+            // so we have to have (n_frames-1)*GUI.n_interpolated_frames images 
             // before we can generate the animation
-            var n_images = (n_frames - 1) * 50;
+            var n_images = (n_frames - 1) * GUI.n_interpolated_frames;
             $.ajax({
                 method: "GET",
                 url: "/extern/render_animation/" + n_images.toString(),
@@ -317,7 +327,7 @@ $(document).ready(function(){
 
             // start the animation loop
             window.requestAnimationFrame(function(){
-                _animate(last_timestep, frame_no, n_keyframes, true);
+                _animate(last_timestep, frame_no, n_keyframes, false);
             });
         },
 
@@ -381,7 +391,7 @@ $(document).ready(function(){
     }
 
     GUI.frames = {}; // interpolated frames temporarily for rendering
-    function _animate(last_timestep, frame_no, length, also_play)
+    function _animate(last_timestep, frame_no, length, save_only)
     {
         if (!play)
             return 
@@ -422,12 +432,22 @@ $(document).ready(function(){
         img.onload = function(){
             GUI.frames[frame_no] = this;
         }
+
+        if (save_only)
+        {
+            if (!path.endsWith("/"))
+            {
+                path += ",";
+            }
+            path += "onlysave," + frame_no.pad(3);
+        }
+        
         img.src = path;
 
         if (play)
         {
             window.requestAnimationFrame(function(){
-                _animate(last_timestep, frame_no, length, also_play);
+                _animate(last_timestep, frame_no, length, save_only);
             });
         }
 
@@ -438,7 +458,7 @@ $(document).ready(function(){
         {
             for (var j = 0; j < 1; j += 0.02)
             {
-                if (also_play)
+                if (save_only)
                 {
                     setTimeout(function(){
                         self.produce_interpolated_frame(i, j);
@@ -461,16 +481,6 @@ $(document).ready(function(){
             }
         }
         */
-    }
-
-    // deprecated
-    function animate(length, also_play)
-    {
-        var last_timestep = new Date().getTime();
-        var frame_no = 0;
-        window.requestAnimationFrame(function(){
-            _animate(last_timestep, frame_no, length, also_play);
-        });
     }
 
     function change_static_config(options)
@@ -546,17 +556,17 @@ $(document).ready(function(){
     settings.addText("Data Max", "1", SettingsController.change_data_range);
     settings.addRange("Isovalue", 0, 1, 0, 0.001, SettingsController.change_isovalue);
     settings.addRange("Timestep", 0, 50, 0, 1, SettingsController.change_timestep);
-    settings.addButton("Play timeseries", SettingsController.play);
-    settings.addButton("Stop timeseries", SettingsController.stop);
+    //settings.addButton("Play timeseries", SettingsController.play);
+    //settings.addButton("Stop timeseries", SettingsController.stop);
     settings.addButton("Add keyframe", SettingsController.clone_keyframe_from_main);
-    //settings.addButton("Render animation", SettingsController.render_animation);
+    settings.addButton("Export to MP4", SettingsController.render_animation);
     settings.addButton("Import animation", open_import_modal);
     settings.addButton("Export animation", SettingsController.export_animation);
     settings.addButton("Play animation", SettingsController.play_animation);
     settings.addButton("Stop animation", SettingsController.stop_animation);
-    settings.addDropDown("Colormap", colormaps, SettingsController.change_colormap);
+    //settings.addDropDown("Colormap", colormaps, SettingsController.change_colormap);
     settings.addHTML("Opacity map", "<div id='tfeditor'></div>");
-    settings.addNumber("Opacity attenuation", 0, 1, 0.1, 0.01, SettingsController.change_attenuation);
+    //settings.addNumber("Opacity attenuation", 0, 1, 0.1, 0.01, SettingsController.change_attenuation);
 
     // Setup the transfer function editor
     tfeditor = new setup_tf_editor($("#tfeditor").get(0), function(tf){
@@ -588,9 +598,9 @@ $(document).ready(function(){
             $(".main-hyperimage").attr("data-timerange", "0.." + (GUI.timesteps - 1).toString());
             $(".hyperimage").tapestry({
                 n_timesteps: GUI.timesteps,
-                width: 512,
-                height: 512,
-                n_tiles: 16
+                width: 700,
+                height: 700,
+                n_tiles: 1 // exporting to mp4 requires a single frame at the moment
             });
             settings.setRangeParameters("Timestep", 0, GUI.timesteps, 1); 
         }
