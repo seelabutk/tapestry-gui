@@ -6,6 +6,19 @@ if [ $n_files -lt $1 ]; then
     echo "not ready";
     exit 1;
 fi;
-ffmpeg -framerate 25 -i /app/data/%03d.jpg -c:v libx264 -crf 20 -profile:v high -pix_fmt yuv420p -y /app/data/animation.mp4
-echo '{"path": "/app/data/animation.mp4"}'
+
+# not compatible with the svt compiled version
+# with libx264
+#ffmpeg -framerate 25 -i /app/data/%03d.jpg -c:v libx264 -crf 20 -profile:v high -pix_fmt yuv420p -y /app/data/animation.mp4
+
+# with libx264 without -crf
+#ffmpeg -framerate 25 -i /app/data/%03d.jpg -c:v libx264 -profile:v high -pix_fmt yuv420p -y /app/data/animation.mp4
+
+# for svt-hevc
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
+
+# with svt-hevc
+ffmpeg -framerate 25 -i /app/data/%03d.jpg -c:v libsvt_hevc -profile main -qp 20 -tag:v hvc1 -pix_fmt yuv420p -y /app/data/animation.mp4
+
+echo '{"svt": "yes", "path": "/app/data/animation.mp4"}'
 rm /app/data/*.jpg
