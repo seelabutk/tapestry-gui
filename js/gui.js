@@ -132,19 +132,26 @@ $(document).ready(function(){
         // this needs to be merged with play_animation later
         render_animation: function()
         {
-            SettingsController.populate_temp_keyframes();
-            delay = long_delay;
-            var n_keyframes = GUI.keyframes.length;
-            var last_timestep = new Date().getTime();
-            var frame_no = 0;
-            play = true;
+            // remove all previously rendered files first
+            $.ajax({
+                method: "GET", 
+                url: "/extern/remove/?rand=" + Math.random().toString(36).substring(7), 
+                success: function(){
+                    SettingsController.populate_temp_keyframes();
+                    delay = long_delay;
+                    var n_keyframes = GUI.keyframes.length;
+                    var last_timestep = new Date().getTime();
+                    var frame_no = 0;
+                    play = true;
 
-            // start the animation loop
-            window.requestAnimationFrame(function(){
-                _animate(last_timestep, frame_no, n_keyframes, true);
+                    // start the animation loop
+                    window.requestAnimationFrame(function(){
+                        _animate(last_timestep, frame_no, n_keyframes, true);
+                    });
+
+                    SettingsController.render_animation_server_side(GUI.keyframes.length);
+                }
             });
-
-            SettingsController.render_animation_server_side(GUI.keyframes.length);
         },
 
         render_animation_server_side: function(n_frames)
@@ -173,6 +180,7 @@ $(document).ready(function(){
                         });
                         modal.setContent("<span style='font-family: sans-serif'>The video is ready. Click <a href='/app/data/animation.mp4'>here</a> to download.</span>");
                         modal.open();
+                        play = false;
                     }
                 }
             });
@@ -439,7 +447,9 @@ $(document).ready(function(){
             {
                 path += ",";
             }
-            path += "onlysave," + frame_no.pad(3);
+            // SVT performs better with PNG
+            path += "onlysave," + frame_no.pad(3) + ",format,png";
+            GUI.frames[frame_no] = "";
         }
         
         img.src = path;

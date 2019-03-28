@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+
+from tapestry_plugin import Tools
+from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw
+from PIL import ImageFilter
+
+import urllib2, cStringIO
+import numpy as np
+import sys
+
+if __name__ == '__main__':
+    request_uri, image = Tools.read_image()
+
+    url = "http://accona.eecs.utk.edu:8010/" + request_uri.replace(',filters,cutaway', '') + ",colormap,viridis,isosurface,135"
+    _file = cStringIO.StringIO(urllib2.urlopen(url, timeout=1).read())
+    iso = Image.open(_file)
+
+    # make a circular mask
+    mask_np = np.ones((image.size[0], image.size[1])) * 60
+    mask = Image.fromarray(mask_np)
+    mask = mask.convert('L')
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((90, 300, 300, 500), fill = 'white', outline ='black')
+    mask = mask.filter(ImageFilter.BLUR)
+
+    image = Image.composite(iso, image, mask)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((90, 300, 300, 500), outline ='black')
+    Tools.write_image(image)

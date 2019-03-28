@@ -1,5 +1,5 @@
 #!/bin/bash
 
-cd ../data
-rm *.png
-rm *.gif
+rm -f /app/data/*.png
+rm -f /app/data/*.mp4
+echo '{"success": "true"}'
